@@ -1,7 +1,9 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
+import { audio } from './audio/audio';
 import { bus } from './bridge/events';
 import type { Mode } from './bridge/events';
 import { CardOverlay } from './components/CardOverlay';
+import { EnterModal } from './components/EnterModal';
 import { GalleryView } from './components/GalleryView';
 import { Hud } from './components/Hud';
 import { games } from './data/games';
@@ -19,6 +21,32 @@ export default function App() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>(initialMode);
   const [engaged, setEngaged] = useState(false);
+  const [entered, setEntered] = useState(false);
+  const [musicOn, setMusicOn] = useState(() => audio.isMusicEnabled);
+  const [sfxOn, setSfxOn] = useState(() => audio.isSfxEnabled);
+
+  useEffect(() => {
+    audio.init();
+  }, []);
+
+  const handleEnter = useCallback(() => {
+    setEntered(true);
+    audio.unlock();
+  }, []);
+
+  const toggleMusic = useCallback(() => {
+    setMusicOn((on) => {
+      audio.setMusicEnabled(!on);
+      return !on;
+    });
+  }, []);
+
+  const toggleSfx = useCallback(() => {
+    setSfxOn((on) => {
+      audio.setSfxEnabled(!on);
+      return !on;
+    });
+  }, []);
 
   const closeCard = useCallback(() => {
     setActiveId(null);
@@ -71,7 +99,12 @@ export default function App() {
   }, []);
 
   if (route === 'gallery') {
-    return <GalleryView />;
+    return (
+      <>
+        <GalleryView />
+        {!entered && <EnterModal onEnter={handleEnter} />}
+      </>
+    );
   }
 
   const activeGame = activeId !== null ? (games.find((g) => g.id === activeId) ?? null) : null;
@@ -82,7 +115,14 @@ export default function App() {
       <Suspense fallback={null}>
         <GameCanvas />
       </Suspense>
-      <Hud mode={mode} onToggle={toggleMode} />
+      <Hud
+        mode={mode}
+        onToggle={toggleMode}
+        musicOn={musicOn}
+        sfxOn={sfxOn}
+        onToggleMusic={toggleMusic}
+        onToggleSfx={toggleSfx}
+      />
       {activeGame && (
         <CardOverlay
           game={activeGame}
@@ -91,6 +131,7 @@ export default function App() {
           onClose={closeCard}
         />
       )}
+      {!entered && <EnterModal onEnter={handleEnter} />}
     </>
   );
 }

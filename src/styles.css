@@ -424,6 +424,87 @@ button {
   width: 100%;
 }
 
+/* ---------- enter modal ---------- */
+
+.enter-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 5, 16, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+.enter-modal__panel {
+  text-align: center;
+  padding: 2.5rem 3rem;
+  animation: enter-modal-rise 500ms ease-out;
+}
+
+.enter-modal__title {
+  margin: 0 0 0.5rem;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  letter-spacing: 0.12em;
+  color: var(--amber);
+  text-shadow: 0 0 24px rgba(246, 178, 107, 0.35);
+}
+
+.enter-modal__tagline {
+  margin: 0 0 2rem;
+  color: var(--text);
+  opacity: 0.8;
+  font-style: italic;
+}
+
+.enter-modal__button {
+  font: inherit;
+  font-size: 1.15rem;
+  letter-spacing: 0.1em;
+  padding: 0.85rem 2.4rem;
+  cursor: pointer;
+  color: var(--amber);
+  background: rgba(246, 178, 107, 0.08);
+  border: 2px solid var(--amber);
+  border-radius: 4px;
+  transition: background 150ms ease, transform 150ms ease;
+  animation: enter-pulse 2.4s ease-in-out infinite;
+}
+
+.enter-modal__button:hover,
+.enter-modal__button:focus-visible {
+  background: rgba(246, 178, 107, 0.2);
+  transform: scale(1.04);
+}
+
+.enter-modal__hint {
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  opacity: 0.5;
+}
+
+@keyframes enter-modal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes enter-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(246, 178, 107, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 18px 4px rgba(246, 178, 107, 0.12);
+  }
+}
+
 /* ---------- motion preferences ---------- */
 
 @media (prefers-reduced-motion: reduce) {
@@ -439,5 +520,10 @@ button {
   .game-canvas::before {
     animation: none;
     opacity: 0.8;
+  }
+
+  .enter-modal__panel,
+  .enter-modal__button {
+    animation: none;
   }
 }
