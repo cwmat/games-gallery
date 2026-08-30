@@ -125,9 +125,10 @@ limitation:
 ### 3.3 Whip arc and range
 
 The whip is a horizontal reach attack in the player's facing direction,
-`WHIP_RANGE` (90px) long, active for a short window synced to the swing
-animation frame (placeholder texture `TEX.whip`, 90x6, laid flat along the
-reach).
+`WHIP_RANGE` (90px) long. The lash is drawn inside the player's whip
+animation frames (no separate whip texture), and the hit lands
+`WHIP_HIT_DELAY_MS` (~300ms) after the swing starts so the strike frame
+is actually visible before the scene pauses under the card.
 
 The hit test is directional and computed relative to facing: for each
 lantern, `dx = (lantern.x - player.x) * facing`, so a positive `dx` always
@@ -302,29 +303,29 @@ the click-to-open variant that isn't built yet.
 
 ## 7. Visual language
 
-### 7.1 Placeholder era (now)
+### 7.1 Shipped art (PixelLab pass, 2026-08-30)
 
-Dark gothic, programmer-art-clean rather than programmer-art-ugly:
+Gothic pixel art generated via the `pixel-art-pipeline` skill
+(`TECH_SPEC.md` §8 has the key/size table):
 
-- Palette: background `#0b0a12`, amber accent `#f6b26b`, purple accent
-  `#8b5cf6`, plus each `GameEntry.accent` as a per-lantern tint.
-  `image-rendering: pixelated` on the canvas even now, so the placeholder
-  era already looks intentional rather than temporary.
-- Shapes: `createPlaceholderTextures()` (`src/game/placeholderArt.ts`)
-  draws every texture in the `TEX` key set as flat, readable Graphics
-  shapes — a silhouette-first pass, no gradients or detail that the art
-  pass would have to fight to overwrite.
-- Everything is a swap-in-place asset keyed by `TEX`, never referenced by
-  file path in game code — the whole point is that the art pass (§7.2)
-  changes zero call sites.
+- Palette: background `#0b0a12`, warm amber lantern light `#f6b26b`,
+  deep blue-grey stone. `image-rendering: pixelated` on the canvas.
+- The vampire-hunter player character (east-facing animations: idle,
+  walk, jump, whip; `flipX` covers west), lit + broken hanging lanterns,
+  carved stone pillars, flagstone floor, and a dim arched-window wall on
+  the slowest parallax layer.
+- Per-game identity: each `GameEntry.accent` tints a procedural additive
+  glow halo behind that game's lantern (with a slow desynced pulse) and
+  the spark burst on shatter — the lantern art itself is never tinted.
+  Broken lanterns lose their glow entirely.
 
-### 7.2 Target era (pixel-art pass)
+### 7.2 Swap discipline
 
-Gothic pixel art, generated and curated via the `pixel-art-pipeline` skill
-(spec in `TECH_SPEC.md` §3.3, §8): same `TEX` keys, same canvas dimensions
-per key, same dark-gothic/amber/purple palette lock, just real sprites
-instead of Graphics shapes. Nothing outside `placeholderArt.ts` (or its
-eventual replacement module) should need to change for this swap to land.
+Everything is a swap-in-place asset keyed by `TEX`
+(`src/game/placeholderArt.ts`), loaded from `public/assets/` in
+`CorridorScene.preload`, never referenced by file path elsewhere in game
+code. Regenerating or adding art (see the skill's wishlist) changes zero
+call sites; only `spark` and `glow` stay procedural.
 
 ---
 
