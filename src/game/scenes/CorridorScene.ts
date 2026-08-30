@@ -6,12 +6,15 @@ import { AutopilotController } from '../autopilot';
 import type { AutopilotLantern, InputState } from '../autopilot';
 import { GAME_HEIGHT, WHIP_RANGE, corridorLayout } from '../config';
 import { Player } from '../objects/Player';
-import { TEX, createPlaceholderTextures } from '../placeholderArt';
+import { PLAYER_SHEET, TEX, createPlaceholderTextures } from '../placeholderArt';
 
 const FLOOR_HEIGHT = 64;
 const FLOOR_TOP_Y = GAME_HEIGHT - FLOOR_HEIGHT;
 const LANTERN_Y = 160;
 const PILLAR_STEP = 220;
+// The whip's strike frame lands ~5 frames into the 16fps swing; the hit (and
+// the scene pause under the card) waits for it so the lash is actually seen.
+const WHIP_HIT_DELAY_MS = 300;
 
 // Keys that count as taking manual control away from autopilot. Deliberately
 // narrow — Tab/Escape/F5/modifiers etc. must never kill autoplay, and this is
@@ -21,6 +24,7 @@ const GAME_CONTROL_KEYS = new Set(['arrowleft', 'arrowright', 'arrowup', 'arrowd
 
 interface LanternState {
   sprite: Phaser.GameObjects.Image;
+  glow: Phaser.GameObjects.Image;
   gameId: string;
   x: number;
   broken: boolean;
@@ -45,6 +49,21 @@ export class CorridorScene extends Phaser.Scene {
 
   constructor() {
     super('corridor');
+  }
+
+  preload(): void {
+    // PixelLab art from public/assets/ (pixel-art-pipeline skill). BASE_URL
+    // keeps paths correct under the /games-gallery/ GitHub Pages base.
+    const base = import.meta.env.BASE_URL;
+    this.load.image(TEX.lantern, `${base}assets/lantern.png`);
+    this.load.image(TEX.lanternBroken, `${base}assets/lantern-broken.png`);
+    this.load.image(TEX.pillar, `${base}assets/pillar.png`);
+    this.load.image(TEX.floor, `${base}assets/floor.png`);
+    this.load.image(TEX.wall, `${base}assets/wall.png`);
+    this.load.spritesheet(TEX.player, `${base}assets/player.png`, {
+      frameWidth: PLAYER_SHEET.frameWidth,
+      frameHeight: PLAYER_SHEET.frameHeight,
+    });
   }
 
   create(): void {
@@ -76,13 +95,21 @@ export class CorridorScene extends Phaser.Scene {
 
     this.player.update(input);
 
-    if (input.attack) {
+    if (input.attack && !this.player.isWhipping) {
       this.player.whip();
-      this.handleWhipHit();
+      this.time.delayedCall(WHIP_HIT_DELAY_MS, () => this.handleWhipHit());
     }
   }
 
   private setupBackground(worldWidth: number): void {
+    // Distant wall with arched windows — slowest parallax layer, dimmed so
+    // the corridor's foreground reads clearly against it.
+    const wall = this.add.tileSprite(0, FLOOR_TOP_Y, worldWidth, 256, TEX.wall);
+    wall.setOrigin(0, 1);
+    wall.setScrollFactor(0.15, 1);
+    wall.setDepth(-20);
+    wall.setAlpha(0.55);
+
     for (let x = 0; x < worldWidth; x += PILLAR_STEP) {
       const pillar = this.add.image(x, FLOOR_TOP_Y, TEX.pillar);
       pillar.setOrigin(0.5, 1);
@@ -104,9 +131,25 @@ export class CorridorScene extends Phaser.Scene {
     this.lanterns = games.map((game, i) => {
       const x = lanternXs[i];
       const tint = Phaser.Display.Color.HexStringToColor(game.accent).color;
+      // The lantern art keeps its own amber palette; the game's accent color
+      // lives in an additive glow halo behind it (and in the spark burst).
+      const glow = this.add.image(x, LANTERN_Y, TEX.glow);
+      glow.setTint(tint);
+      glow.setBlendMode(Phaser.BlendModes.ADD);
+      glow.setAlpha(0.7);
+      glow.setScale(1.6);
+      glow.setDepth(-1);
+      this.tweens.add({
+        targets: glow,
+        alpha: { from: 0.5, to: 0.85 },
+        scale: { from: 1.45, to: 1.7 },
+        duration: 1200 + i * 137, // desync the flicker per lantern
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
       const sprite = this.add.image(x, LANTERN_Y, TEX.lantern);
-      sprite.setTint(tint);
-      return { sprite, gameId: game.id, x, broken: false, tint };
+      return { sprite, glow, gameId: game.id, x, broken: false, tint };
     });
   }
 
@@ -204,7 +247,8 @@ export class CorridorScene extends Phaser.Scene {
   private shatterLantern(lantern: LanternState): void {
     lantern.broken = true;
     lantern.sprite.setTexture(TEX.lanternBroken);
-    lantern.sprite.clearTint();
+    this.tweens.killTweensOf(lantern.glow);
+    lantern.glow.setVisible(false);
     this.spawnSpark(lantern, 16);
   }
 
