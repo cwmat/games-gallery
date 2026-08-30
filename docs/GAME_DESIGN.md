@@ -163,6 +163,23 @@ one. A grounded whip also plants the player's feet for the whole swing
 (air whips keep their momentum), so the strike lands exactly where the
 animation shows it.
 
+### 3.4 Corridor haunts (enemies)
+
+Stationary enemies punctuate the walk — one at the midpoint of each gap
+between lanterns (`enemyXs()` in `src/game/config.ts`), alternating between
+the two kinds in `ENEMY_KINDS` (`placeholderArt.ts`): a skeleton warrior
+standing guard and a hovering wraith. They idle with their own animations,
+deal no damage, block nothing, and exist to be satisfying to whip:
+
+- The whip is an arc — every living enemy in the hit band dies on a swing,
+  independently of (and in addition to) any lantern hit.
+- Death is loud: white hit-flash, the kind's death animation (bone-pile
+  collapse / wisp dissipation), an accent-tinted expanding glow ring, spark
+  burst, and a small camera shake (`impactBurst` in `src/game/effects.ts`;
+  shake respects `prefers-reduced-motion`).
+- They drift back into existence 16-22s later (fade-in), so the corridor
+  never stays empty. Kills never pause the scene or open cards.
+
 ---
 
 ## 4. Lanterns and cards
@@ -405,3 +422,35 @@ and not a game in its own right:
   opens a `role="dialog"` overlay mirroring the corridor's `CardOverlay`,
   rather than always showing everything at once — is a plausible future
   layout change but isn't built.
+
+---
+
+## 10. Audio
+
+### 10.1 The enter gate
+
+Browsers refuse audio without a user gesture, so landing on the page shows
+a translucent title-card modal ("Enter the castle") over the visible
+corridor. The click dismisses it and unlocks playback
+(`audio.unlock()` in `src/audio/audio.ts`). It shows on every visit, on
+both routes, and doubles as the attract-screen title.
+
+### 10.2 Music and SFX
+
+- One looping theme (`assets/audio/theme.mp3`) — mood target: dark,
+  driving, heroic; retro-game-flavored metal energy that stays fun rather
+  than grim.
+- SFX are wired through the bridge's `fx` event (`whip`, `shatter`,
+  `reopen`, `enemy-die`) so they fire identically in manual play and
+  autoplay. The Phaser game itself runs `noAudio`; all playback is plain
+  `HTMLAudioElement`s in `src/audio/audio.ts`.
+- Every file is optional: the controller HEAD-checks each path and stays
+  silent (no console errors) until the `audio-pipeline` skill generates
+  them with ElevenLabs.
+
+### 10.3 Toggles
+
+The HUD carries independent `Music: on/off` and `SFX: on/off` toggles,
+persisted per-visitor in localStorage (`gg-music` / `gg-sfx`, default on).
+Muting music pauses the element; re-enabling resumes it if the gate was
+entered.

@@ -4,9 +4,11 @@ import type { Mode } from '../../bridge/events';
 import { games } from '../../data/games';
 import { AutopilotController } from '../autopilot';
 import type { AutopilotLantern, InputState } from '../autopilot';
-import { GAME_HEIGHT, WHIP_RANGE, corridorLayout } from '../config';
+import { GAME_HEIGHT, WHIP_RANGE, corridorLayout, enemyXs } from '../config';
+import { hitFlash, impactBurst } from '../effects';
+import { Enemy } from '../objects/Enemy';
 import { Player } from '../objects/Player';
-import { PLAYER_SHEET, TEX, createPlaceholderTextures } from '../placeholderArt';
+import { ENEMY_KINDS, PLAYER_SHEET, TEX, createPlaceholderTextures } from '../placeholderArt';
 
 const FLOOR_HEIGHT = 64;
 const FLOOR_TOP_Y = GAME_HEIGHT - FLOOR_HEIGHT;
@@ -39,6 +41,7 @@ export class CorridorScene extends Phaser.Scene {
   private player!: Player;
   private floorBody!: Phaser.GameObjects.Rectangle;
   private lanterns: LanternState[] = [];
+  private enemies: Enemy[] = [];
   private mode: Mode = 'manual';
   private autopilot = new AutopilotController();
 
@@ -68,6 +71,12 @@ export class CorridorScene extends Phaser.Scene {
       frameWidth: PLAYER_SHEET.frameWidth,
       frameHeight: PLAYER_SHEET.frameHeight,
     });
+    for (const kind of ENEMY_KINDS) {
+      this.load.spritesheet(kind.key, `${base}assets/${kind.file}`, {
+        frameWidth: kind.frameWidth,
+        frameHeight: kind.frameHeight,
+      });
+    }
   }
 
   create(): void {
@@ -83,6 +92,7 @@ export class CorridorScene extends Phaser.Scene {
     this.setupBackground(layout.worldWidth);
     this.setupFloor(layout.worldWidth);
     this.setupLanterns(layout.lanternXs);
+    this.setupEnemies(layout.lanternXs);
     this.setupPlayer();
     this.setupInput();
     this.setupBus();
@@ -102,6 +112,7 @@ export class CorridorScene extends Phaser.Scene {
 
     if (input.attack && !this.player.isWhipping) {
       this.player.whip();
+      bus.emit('fx', { kind: 'whip' });
       this.time.delayedCall(WHIP_HIT_DELAY_MS, () => this.handleWhipHit());
     }
   }
@@ -158,6 +169,29 @@ export class CorridorScene extends Phaser.Scene {
       });
       const sprite = this.add.image(x, LANTERN_Y, TEX.lantern);
       return { sprite, glow, gameId: game.id, x, broken: false, tint };
+    });
+  }
+
+  private setupEnemies(lanternXs: number[]): void {
+    // Register each kind's animations once (the anims manager is global).
+    for (const kind of ENEMY_KINDS) {
+      for (const name of ['idle', 'death'] as const) {
+        const animKey = kind.animKeys[name];
+        if (!this.anims.exists(animKey)) {
+          const cfg = kind.anims[name];
+          this.anims.create({
+            key: animKey,
+            frames: this.anims.generateFrameNumbers(kind.key, { start: cfg.start, end: cfg.end }),
+            frameRate: cfg.frameRate,
+            repeat: name === 'idle' ? -1 : 0,
+          });
+        }
+      }
+    }
+
+    this.enemies = enemyXs(lanternXs).map((x, i) => {
+      const kind = ENEMY_KINDS[i % ENEMY_KINDS.length];
+      return new Enemy(this, x, FLOOR_TOP_Y + kind.yOffset, kind);
     });
   }
 
@@ -233,6 +267,17 @@ export class CorridorScene extends Phaser.Scene {
     // player. -12 gives a little slack behind the player's origin so a
     // lantern right at their feet still registers.
     const facing = this.player.facingDir;
+    const inBand = (x: number): boolean => {
+      const dx = (x - this.player.x) * facing;
+      return dx >= -12 && dx <= WHIP_RANGE + 20;
+    };
+
+    // The whip is an arc: every living enemy in the band dies. Enemy kills
+    // never pause the scene or open cards — they're corridor seasoning.
+    for (const enemy of this.enemies) {
+      if (enemy.alive && inBand(enemy.x)) enemy.kill();
+    }
+
     const hittable = this.lanterns
       .map((l) => ({ lantern: l, dx: (l.x - this.player.x) * facing }))
       .filter(({ dx }) => dx >= -12 && dx <= WHIP_RANGE + 20);
@@ -243,21 +288,31 @@ export class CorridorScene extends Phaser.Scene {
 
     if (!nearest.broken) {
       this.shatterLantern(nearest);
+      bus.emit('fx', { kind: 'shatter' });
     } else {
       this.spawnSpark(nearest, 4);
+      impactBurst(this, nearest.x, LANTERN_Y, nearest.tint, 0.4);
+      bus.emit('fx', { kind: 'reopen' });
     }
 
-    bus.emit('lantern:broken', { gameId: nearest.gameId });
-    this.input.keyboard?.disableGlobalCapture();
-    this.scene.pause();
+    // Let the flash/burst play out before freezing the scene under the card —
+    // pausing in the same tick would leave a half-finished explosion behind it.
+    this.time.delayedCall(350, () => {
+      bus.emit('lantern:broken', { gameId: nearest.gameId });
+      this.input.keyboard?.disableGlobalCapture();
+      this.scene.pause();
+    });
   }
 
   private shatterLantern(lantern: LanternState): void {
     lantern.broken = true;
-    lantern.sprite.setTexture(TEX.lanternBroken);
+    hitFlash(this, lantern.sprite);
+    this.time.delayedCall(80, () => {
+      if (lantern.sprite.active) lantern.sprite.setTexture(TEX.lanternBroken);
+    });
     this.tweens.killTweensOf(lantern.glow);
     lantern.glow.setVisible(false);
-    this.spawnSpark(lantern, 16);
+    impactBurst(this, lantern.x, LANTERN_Y, lantern.tint, 1);
   }
 
   private spawnSpark(lantern: LanternState, quantity: number): void {

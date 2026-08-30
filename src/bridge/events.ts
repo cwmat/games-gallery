@@ -4,10 +4,14 @@
 
 export type Mode = 'manual' | 'auto';
 
+/** Game moments the audio layer (and any future reactive UI) can score. */
+export type FxKind = 'whip' | 'shatter' | 'reopen' | 'enemy-die';
+
 export interface BridgeEvents {
   'lantern:broken': { gameId: string };
   'card:closed': void;
   'mode:changed': { mode: Mode };
+  fx: { kind: FxKind };
 }
 
 type Listener<T> = (payload: T) => void;
