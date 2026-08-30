@@ -26,6 +26,58 @@ export const PLAYER_SHEET = {
   },
 } as const;
 
+/** One stationary corridor enemy type: sheet layout + anim frame ranges. */
+export interface EnemyKindDef {
+  key: string;
+  file: string;
+  frameWidth: number;
+  frameHeight: number;
+  eastFrame: number;
+  /** Added to FLOOR_TOP_Y: positive plants feet, negative hovers. */
+  yOffset: number;
+  burstTint: number;
+  animKeys: { idle: string; death: string };
+  anims: {
+    idle: { start: number; end: number; frameRate: number };
+    death: { start: number; end: number; frameRate: number };
+  };
+}
+
+// Both sheets are 76x76 cells, 7 columns: row 0 rotations (east = col 2),
+// row 1 idle, row 2 death. The wraith's death row re-solidifies in its last
+// two frames (loopback artifact) — its range stops at the most-dissolved
+// frame and the Enemy fade-out takes over from there.
+export const ENEMY_KINDS: EnemyKindDef[] = [
+  {
+    key: 'enemy-skeleton',
+    file: 'enemy-skeleton.png',
+    frameWidth: 76,
+    frameHeight: 76,
+    eastFrame: 2,
+    yOffset: 10,
+    burstTint: 0xd94f3a,
+    animKeys: { idle: 'enemy-skeleton-idle', death: 'enemy-skeleton-death' },
+    anims: {
+      idle: { start: 7, end: 11, frameRate: 5 },
+      death: { start: 14, end: 20, frameRate: 12 },
+    },
+  },
+  {
+    key: 'enemy-wraith',
+    file: 'enemy-wraith.png',
+    frameWidth: 76,
+    frameHeight: 76,
+    eastFrame: 2,
+    yOffset: -14,
+    burstTint: 0x8b5cf6,
+    animKeys: { idle: 'enemy-wraith-idle', death: 'enemy-wraith-death' },
+    anims: {
+      idle: { start: 7, end: 13, frameRate: 6 },
+      death: { start: 14, end: 18, frameRate: 12 },
+    },
+  },
+];
+
 /**
  * Procedural textures that intentionally stay generated (no PixelLab art):
  * spark particles and the additive lantern glow that carries each game's

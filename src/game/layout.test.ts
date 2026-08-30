@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { enemyXs } from './config';
 import { CORRIDOR_MARGIN, LANTERN_SPACING, corridorLayout } from './config';
 
 describe('corridorLayout', () => {
@@ -37,5 +38,19 @@ describe('corridorLayout', () => {
     for (let i = 1; i < layout.lanternXs.length; i++) {
       expect(layout.lanternXs[i]).toBeGreaterThan(layout.lanternXs[i - 1]);
     }
+  });
+
+  it('places one enemy at each gap midpoint between lanterns', () => {
+    const layout = corridorLayout(5);
+    const xs = enemyXs(layout.lanternXs);
+    expect(xs).toHaveLength(4);
+    for (let i = 0; i < xs.length; i++) {
+      expect(xs[i]).toBe((layout.lanternXs[i] + layout.lanternXs[i + 1]) / 2);
+    }
+  });
+
+  it('spawns no enemies for zero or one lantern', () => {
+    expect(enemyXs([])).toHaveLength(0);
+    expect(enemyXs([640])).toHaveLength(0);
   });
 });

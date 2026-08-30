@@ -23,3 +23,16 @@ export function corridorLayout(count: number): CorridorLayout {
 
   return { worldWidth, lanternXs };
 }
+
+/**
+ * Enemy spawn positions: the midpoint of each gap between consecutive
+ * lanterns, so enemies punctuate the walk without ever standing in front
+ * of a lantern. Scales with the games list like everything else.
+ */
+export function enemyXs(lanternXs: number[]): number[] {
+  const xs: number[] = [];
+  for (let i = 0; i < lanternXs.length - 1; i += 1) {
+    xs.push((lanternXs[i] + lanternXs[i + 1]) / 2);
+  }
+  return xs;
+}
