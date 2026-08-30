@@ -13,7 +13,9 @@ import { useHashRoute } from './hooks/useHashRoute';
 const GameCanvas = lazy(() => import('./components/GameCanvas'));
 
 function initialMode(): Mode {
-  return window.matchMedia('(pointer: coarse)').matches ? 'auto' : 'manual';
+  // Autoplay is the default everywhere — the site opens as an arcade attract
+  // mode. Pressing any game-control key (or the HUD toggle) takes over.
+  return 'auto';
 }
 
 export default function App() {
@@ -32,6 +34,7 @@ export default function App() {
   const handleEnter = useCallback(() => {
     setEntered(true);
     audio.unlock();
+    bus.emit('gate:entered');
   }, []);
 
   const toggleMusic = useCallback(() => {
@@ -83,8 +86,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Keeps the game scene in sync with the current mode, including the
-    // pointer-based initial default that is decided before the scene exists.
+    // Keeps the game scene in sync with the current mode. (The attract demo
+    // additionally waits for the Enter gate — see 'gate:entered' — so it
+    // can't break lanterns and pop cards UNDER the title modal.)
     bus.emit('mode:changed', { mode });
   }, [mode]);
 

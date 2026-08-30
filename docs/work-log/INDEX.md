@@ -1,5 +1,6 @@
 # Work log — index
 <!-- newest first; format: YYYY-MM-DD — <slug> — <spec sections> — <outcome> -->
+2026-08-30 — autoplay-default-labels — GD §5.4/§4 — autoplay default for all (held until Enter gate), floating lantern title labels
 2026-08-30 — autopilot-fights — GD §5.2/§3.4 — autoplay now fights haunts en route to lanterns; wrap-carousel guard; +3 tests
 2026-08-30 — audio-generation — GD §10 — theme + 4 SFX minted via ElevenLabs, full chain verified playing, taste pass pending
 2026-08-30 — enemies-and-audio — GD §3.4/§10, TS §2/§3.3/§4.1 — skeleton+wraith enemies w/ death FX, impact kit, enter gate, music/sfx toggles, ElevenLabs slot

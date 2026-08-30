@@ -11,6 +11,8 @@ export interface BridgeEvents {
   'lantern:broken': { gameId: string };
   'card:closed': void;
   'mode:changed': { mode: Mode };
+  /** The Enter modal was clicked — the attract demo may start. */
+  'gate:entered': void;
   fx: { kind: FxKind };
 }
 
@@ -22,9 +24,15 @@ type VoidKeys = { [K in keyof BridgeEvents]: BridgeEvents[K] extends void ? K : 
 type PayloadKeys = Exclude<keyof BridgeEvents, VoidKeys>;
 
 let currentMode: Mode = 'manual';
+let gateEntered = false;
 
 export function getCurrentMode(): Mode {
   return currentMode;
+}
+
+/** True once the visitor has clicked through the Enter modal this session. */
+export function isGateEntered(): boolean {
+  return gateEntered;
 }
 
 export class Bridge {
@@ -48,6 +56,9 @@ export class Bridge {
   emit<K extends keyof BridgeEvents>(event: K, payload?: BridgeEvents[K]): void {
     if (event === 'mode:changed') {
       currentMode = (payload as BridgeEvents['mode:changed']).mode;
+    }
+    if (event === 'gate:entered') {
+      gateEntered = true;
     }
     const set = this.listeners.get(event);
     if (!set) return;
