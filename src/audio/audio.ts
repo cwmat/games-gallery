@@ -132,3 +132,9 @@ class AudioController {
 }
 
 export const audio = new AudioController();
+
+if (import.meta.env.DEV) {
+  // Playtest hook, mirroring window.__game: lets browser-driven test
+  // sessions confirm what is actually loaded and playing.
+  (window as unknown as { __audio?: AudioController }).__audio = audio;
+}

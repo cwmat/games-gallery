@@ -29,22 +29,32 @@ Keep SFX ≤ ~100KB and the theme ≤ ~3MB (Pages serves statically). Volumes
 are normalized in code (music 0.35, sfx 0.5) — aim for consistent loudness
 across clips rather than tweaking code constants.
 
-## ElevenLabs REST (verify current shapes at https://elevenlabs.io/docs/api-reference before spending)
+## ElevenLabs REST (shapes proven 2026-08-30)
 
-- Auth header on every call: `xi-api-key: $ELEVENLABS_API_KEY`.
+- Auth header on every call: `xi-api-key: $ELEVENLABS_API_KEY`. A restricted
+  key without `user_read` cannot call `GET /v1/user/subscription` (credit
+  check) but generates fine — don't treat that 401 as a broken key.
 - SFX: `POST https://api.elevenlabs.io/v1/sound-generation` with JSON
-  `{ "text": "<description>", "duration_seconds": <n>, "prompt_influence": 0.4 }`
-  → returns mp3 bytes.
-- Music: the Eleven Music API (`/v1/music`, streaming + non-streaming
-  variants) takes a prompt + duration; check the docs page for the current
-  endpoint/params and whether the account tier includes it.
-- Check remaining credits via `GET /v1/user/subscription` before a batch.
+  `{ "text": "<description>", "duration_seconds": <n>, "prompt_influence": 0.45 }`
+  → returns mp3 bytes (128kbps 44.1kHz). `duration_seconds` must be
+  **0.5-30** — 0.4 is rejected with a 400.
+- Music: `POST https://api.elevenlabs.io/v1/music` with
+  `{ "prompt": "<mood/style/loop direction>", "music_length_ms": <n> }`
+  → returns mp3 bytes directly (75s ≈ 1.2MB). Put "seamless loop, no
+  intro fade-in, no outro fade-out, loops perfectly back to the start" in
+  the prompt itself.
+- A 400 error body lands wherever curl's `-o` points — check small output
+  files for JSON before trusting them as audio.
 
 ## Workflow
 
 1. Generate a candidate clip → save to `public/assets/audio/<slot>.mp3`.
 2. `pnpm dev`, click Enter, verify in-browser: theme loops cleanly, SFX fire
-   on whip/shatter/reopen/enemy-die, both HUD toggles work.
+   on whip/shatter/reopen/enemy-die, both HUD toggles work. Headless check:
+   the dev-only `window.__audio` hook exposes the controller — music
+   playing = `!__audio.music.paused`, a fired clip has `currentTime > 0`
+   (emit a real `bus.emit('fx', {kind})` via a dynamic import of
+   `src/bridge/events.ts` to exercise the true path).
 3. Iterate on the prompt until the mood fits (§7 of GAME_DESIGN: dark gothic,
    amber warmth, self-aware fun — intense but not grim).
 4. Loop check for the theme: play the file twice back-to-back; an audible
