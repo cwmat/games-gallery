@@ -46,28 +46,33 @@ games-gallery/
     data/
       games.ts                 # GameEntry[] — the single content source (§5)
       games.test.ts             # invariant tests for games.ts (§7)
+    audio/
+      audio.ts                 # music + SFX controller (design doc §10) — HEAD-checks optional files
     bridge/
       events.ts                # typed Phaser<->React emitter (§4) — no Phaser or React import
       events.test.ts            # Bridge emitter tests (§7)
     game/
-      config.ts                # layout constants + corridorLayout() (§2 of design doc) — no Phaser import
-      layout.test.ts            # corridorLayout() tests (§7)
+      config.ts                # layout constants + corridorLayout()/enemyXs() — no Phaser import
+      layout.test.ts            # corridorLayout()/enemyXs() tests (§7)
       autopilot.ts               # pure InputState driver for attract mode (§4.2; design doc §5)
       autopilot.test.ts          # AutopilotController tests (§7)
-      placeholderArt.ts          # TEX key contract + PLAYER_SHEET layout + procedural spark/glow
+      placeholderArt.ts          # TEX key contract + PLAYER_SHEET/ENEMY_KINDS layouts + procedural spark/glow
+      effects.ts                 # impactBurst/hitFlash — the shared punchy-hit toolkit (design doc §3.4)
       createGame.ts               # constructs the Phaser.Game instance (§4.2)
       objects/
         Player.ts                 # player sprite: movement, facing, animation state machine
+        Enemy.ts                  # stationary corridor haunts: idle, whip-death, respawn (design doc §3.4)
       scenes/
-        CorridorScene.ts          # the corridor Phaser.Scene: lanterns, input, bridge wiring (§4)
+        CorridorScene.ts          # the corridor Phaser.Scene: lanterns, enemies, input, bridge wiring (§4)
     hooks/
       useHashRoute.ts           # '#/gallery' -> 'gallery', else -> 'game'
     components/
       GameCanvas.tsx             # owns the Phaser.Game lifecycle (§4.2), React.lazy-loaded from App.tsx
       CardOverlay.tsx            # dialog chrome around a card: focus trap, autoplay progress bar
+      EnterModal.tsx             # landing gate = the audio-unlock user gesture (design doc §10.1)
       GameCard.tsx                # renders one GameEntry — shared by CardOverlay and GalleryView
       GalleryView.tsx             # #/gallery grid (React.lazy split from the game bundle)
-      Hud.tsx                     # title, autoplay toggle, gallery link, controls hint
+      Hud.tsx                     # title, autoplay/music/sfx toggles, gallery link, controls hint
   .github/
     workflows/
       deploy.yml                 # build + deploy to Pages on push to main (§6)
@@ -103,7 +108,7 @@ then code follows.
 The initial scaffold task creates, alongside app code:
 
 1. `CLAUDE.md` at repo root (contents in §3.2).
-2. `.claude/skills/` containing the four skills in §3.3.
+2. `.claude/skills/` containing the five skills in §3.3.
 3. `docs/` with both spec docs plus `docs/work-log/INDEX.md` (empty,
    header only).
 4. `.githooks/` with a pre-push hook wired via the `prepare` npm script
@@ -183,6 +188,13 @@ shapes for curated pixel art never touches a call site outside that one
 module. Batches by `TEX` key, drops candidates for human curation, and
 never edits scene logic, only the texture-producing module.
 
+**Skill 5 — `audio-pipeline`.** Generates the loop music and SFX with
+ElevenLabs (key in `.env` as `ELEVENLABS_API_KEY`, dev-time only) into the
+file slots `src/audio/audio.ts` already HEAD-checks — dropping a correctly
+named mp3 into `public/assets/audio/` is the entire integration. Owns the
+`fx`-event-to-file mapping, mood direction (design doc §10.2), and loop
+seam checks for the theme.
+
 ### 3.4 Planning-session handoff
 
 To start a build session: point a Claude planning session at
@@ -200,8 +212,9 @@ to send.**
 
 `src/bridge/events.ts` (contract: `Bridge` emitter class + `bus` singleton
 + `BridgeEvents` map for `'lantern:broken'`, `'card:closed'`,
-`'mode:changed'`) is the **only** communication path between the Phaser
-scene and React. Neither side reaches into the other's internals — no
+`'mode:changed'`, and `'fx'` — game moments the audio layer scores, see
+design doc §10) is the **only** communication path between the Phaser
+scene and React (and the audio controller, which is bridge-side too). Neither side reaches into the other's internals — no
 `sceneRef.current.someMethod()` calls from React into scene state, no
 Phaser code importing a React component or context. If a new interaction
 needs to cross the boundary, it gets a new event on `BridgeEvents`, not a

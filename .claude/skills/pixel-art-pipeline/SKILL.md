@@ -41,6 +41,14 @@ source of truth, not this list. **Shipped** (in `public/assets/`, loaded in
   `'lantern-broken'` — files are named by the value string.
 - `pillar.png` 48x256, `floor.png` 64x64, `wall.png` 320x256 background
   parallax strip (pixflux).
+- `enemy-skeleton.png` + `enemy-wraith.png` — 76x76-cell, 7-column sheets
+  (row 0 rotations, east = col 2; row 1 idle; row 2 death). Layouts live in
+  `ENEMY_KINDS` (`placeholderArt.ts`). Character ids for style-matched
+  additions: skeleton `2012ac27-2a78-4345-8bc9-b58c1ab0a74d`, wraith
+  `90a922bf-2a46-4e19-b563-09661bc92190`. The wraith's death row
+  re-solidifies in its last two frames — its anim range stops early on
+  purpose. NOTE: a create-character job can crash server-side ("Generation
+  failed to start", not charged) — just resubmit the identical payload.
 
 **Procedural — do not generate:** `TEX.spark` (4x4 particle) and
 `TEX.glow` (radial halo carrying each game's accent color; the lantern art

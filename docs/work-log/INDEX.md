@@ -1,5 +1,6 @@
 # Work log — index
 <!-- newest first; format: YYYY-MM-DD — <slug> — <spec sections> — <outcome> -->
+2026-08-30 — enemies-and-audio — GD §3.4/§10, TS §2/§3.3/§4.1 — skeleton+wraith enemies w/ death FX, impact kit, enter gate, music/sfx toggles, ElevenLabs slot
 2026-08-30 — edge-fade-fix — GD §2.2 — radial mask was a no-op (radii vs full box dims); linear-gradient intersect mask, --canvas-fade 8%
 2026-08-30 — canvas-presentation — GD §2.2 — centering fixed (single authority), gutter aurora + soft canvas edge fade
 2026-08-30 — gameplay-feel — GD §2.2/§3.3/§4/§8 — lanterns to whip height on chains, planted whips, 1.5x zoom, card hero video slot
