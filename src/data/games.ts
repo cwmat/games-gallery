@@ -1,8 +1,19 @@
 export type GameStatus = 'playable' | 'wip' | 'jam' | 'archived';
 
+/**
+ * Card media. The FIRST entry is the card's hero slot (videos preferred —
+ * they autoplay muted in the slot). Convention for local files:
+ * drop them in public/assets/media/ and reference them relative, e.g.
+ *   { kind: 'video', src: 'assets/media/hex-herbs.mp4',
+ *     poster: 'assets/media/hex-herbs.jpg', alt: 'Hex Herbs gameplay' }
+ * Keep videos short (10-30s) and small (≤ ~10MB) — GitHub Pages serves
+ * them statically with no streaming. External http(s) URLs also work.
+ */
 export interface GameMedia {
   kind: 'image' | 'video';
   src: string;
+  /** Optional preview frame shown before a video loads/plays. */
+  poster?: string;
   alt: string;
 }
 

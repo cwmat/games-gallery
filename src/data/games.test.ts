@@ -68,4 +68,16 @@ describe('games data', () => {
       }
     }
   });
+
+  it('has a valid poster path when a media item declares one', () => {
+    const RELATIVE_ASSET_PATH = /^assets\//;
+    for (const game of games) {
+      for (const media of game.media) {
+        if (media.poster === undefined) continue;
+        expect(
+          /^https?:\/\//.test(media.poster) || RELATIVE_ASSET_PATH.test(media.poster),
+        ).toBe(true);
+      }
+    }
+  });
 });
