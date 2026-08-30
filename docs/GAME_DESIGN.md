@@ -179,6 +179,9 @@ deal no damage, block nothing, and exist to be satisfying to whip:
   shake respects `prefers-reduced-motion`).
 - They drift back into existence 16-22s later (fade-in), so the corridor
   never stays empty. Kills never pause the scene or open cards.
+- Autoplay fights them too: a haunt on the path to the next lantern is an
+  intermediate target for the autopilot (§5.2), so attract mode shows off
+  the combat, not just the carousel.
 
 ---
 
@@ -258,11 +261,16 @@ where movement logic branches.
 Behavior:
 
 1. Walk right at normal speed.
-2. On approaching an unbroken lantern within whip range, stop and whip it.
-3. Once the card opens, autoplay's job is done for that lantern — it
+2. Any living corridor haunt (§3.4) standing between the player and the
+   current lantern target is fought first: stop at whip range, kill it,
+   walk on. Haunts behind the line of travel (a respawn behind the player)
+   are ignored so the walk never ping-pongs, and an en-route kill never
+   advances the wrap-phase carousel — no lantern gets skipped.
+3. On approaching an unbroken lantern within whip range, stop and whip it.
+4. Once the card opens, autoplay's job is done for that lantern — it
    dwells (does nothing) for `CARD_AUTO_CLOSE_MS` (6000ms), then the card
    auto-closes and autoplay resumes walking right.
-4. On reaching the rightmost lantern (or the corridor's end), wrap back to
+5. On reaching the rightmost lantern (or the corridor's end), wrap back to
    the leftmost unbroken — or, if everything's broken, leftmost — lantern
    and continue. The loop never dead-ends at the far wall.
 
