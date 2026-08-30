@@ -69,10 +69,12 @@ Worked example at the current seed count (5 entries):
 
 The Phaser canvas is fixed at `GAME_WIDTH x GAME_HEIGHT` (960x540) and
 scales to fit its container (letterboxed, not stretched) so the pixel-art
-era of the art pass reads crisply at any window size. The camera follows
-the player horizontally with world bounds clamped to `[0, worldWidth]`;
-vertically the corridor never scrolls — one floor, one row of lanterns, no
-verticality in v1 (see §9).
+era of the art pass reads crisply at any window size. On top of that, the
+camera runs at `CAMERA_ZOOM` (1.5x) for chunky Castlevania framing — the
+character reads large on screen instead of as a distant figure. The camera
+follows the player horizontally with world bounds clamped to
+`[0, worldWidth]`; vertically the corridor never scrolls — one floor, one
+row of lanterns, no verticality in v1 (see §9).
 
 ### 2.3 HUD
 
@@ -141,8 +143,13 @@ reach past the strict range. Facing mirrors this band automatically —
 flip facing and the accepted `dx` window flips with it — so a lantern on
 the player's rear side is never in range and never registers a hit, no
 matter how close it is. When more than one lantern falls in the band, the
-nearest by `|dx|` is the one that gets hit (lanterns hang at a fixed y, so
-this is purely a horizontal check, not a full AABB sweep).
+nearest by `|dx|` is the one that gets hit (this is purely a horizontal
+check, not a full AABB sweep). Lanterns hang on long ceiling chains down
+to `LANTERN_Y` (`FLOOR_TOP_Y - 60`) — glass level with the player's
+swing — so a hit looks like a hit; no jumping is ever required to reach
+one. A grounded whip also plants the player's feet for the whole swing
+(air whips keep their momentum), so the strike lands exactly where the
+animation shows it.
 
 ---
 
@@ -171,8 +178,11 @@ list in §8):
 - `title`, `blurb` — header treatment.
 - `description` — body copy.
 - `tags` — chip row.
-- `media` — image/video gallery, in array order; empty array renders no
-  media block (not a broken-image placeholder).
+- `media` — the FIRST entry is the card's 16:9 hero slot; videos are
+  preferred there and autoplay muted (looped, with controls). Remaining
+  entries render as a gallery below the blurb. An empty array renders a
+  styled "gameplay footage soon" placeholder slot, so the layout is
+  stable before footage exists.
 - `url` — the primary "Visit game" call to action.
 - `repoUrl` — secondary link, shown only when present.
 - `accent` — tints the card's trim and the lantern's own glow prior to
@@ -342,7 +352,7 @@ either view (full type contract lives in code; meanings below):
 | `title` | Card header. |
 | `blurb` | One-liner, shown wherever space is tight (card header sub-line, gallery card front). |
 | `description` | Full body copy for the opened card. |
-| `media` | Ordered `{ kind, src, alt }[]`; may be empty. `src` is either an external URL or an `assets/...` path served from `public/`. |
+| `media` | Ordered `{ kind, src, poster?, alt }[]`; may be empty. First entry = the card's hero slot (videos preferred; autoplay muted). `src`/`poster` are external URLs or `assets/...` paths served from `public/` — convention: `assets/media/<id>.mp4` (+ optional `assets/media/<id>.jpg` poster), 10-30s, ≤ ~10MB (Pages serves statically, no streaming). |
 | `url` | The "Visit game" link — the primary reason the card exists. |
 | `repoUrl` | Optional secondary link to source. |
 | `tags` | Free-form chip strings (genre, engine, jam name, whatever's useful). |
@@ -355,7 +365,8 @@ either view (full type contract lives in code; meanings below):
 Adding a game to the site is **one array entry** in `src/data/games.ts` —
 no new components, no new routes, no lantern-placement work (§2.1 handles
 that automatically as `games.length` changes). If the entry has no `media`
-yet, ship it with `media: []`; the card layout tolerates the empty case.
+yet, ship it with `media: []`; the card shows its "gameplay footage soon"
+placeholder slot until real footage lands.
 
 ---
 
