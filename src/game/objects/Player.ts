@@ -1,33 +1,58 @@
 import Phaser from 'phaser';
 import type { InputState } from '../autopilot';
-import { TEX } from '../placeholderArt';
+import { PLAYER_SHEET, TEX } from '../placeholderArt';
 
 const WALK_SPEED = 220;
 const JUMP_VELOCITY = -420;
-const WHIP_VISIBLE_MS = 120;
-const WHIP_GAP = 10;
+
+// The character occupies ~32x48 of the 76x76 cell (cell-center pivot from
+// PixelLab); the body hugs that region so physics ignore the padding. The
+// body's bottom edge sits on the art's feet line (~cell y 66).
+const BODY_WIDTH = 22;
+const BODY_HEIGHT = 44;
+const FEET_Y_IN_CELL = 66;
+
+const ANIM = {
+  idle: 'player-idle',
+  walk: 'player-walk',
+  jump: 'player-jump',
+  whip: 'player-whip',
+} as const;
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private facing: 1 | -1 = 1;
-  private whipSprite: Phaser.GameObjects.Image;
-  private whipHideEvent: Phaser.Time.TimerEvent | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, TEX.player);
+    super(scene, x, y, TEX.player, PLAYER_SHEET.eastFrame);
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
     this.setCollideWorldBounds(true);
     this.setOrigin(0.5, 1);
+    this.setSize(BODY_WIDTH, BODY_HEIGHT);
+    this.setOffset((PLAYER_SHEET.frameWidth - BODY_WIDTH) / 2, FEET_Y_IN_CELL - BODY_HEIGHT);
 
-    this.whipSprite = scene.add.image(x, y, TEX.whip);
-    this.whipSprite.setOrigin(0, 0.5);
-    this.whipSprite.setVisible(false);
-    this.whipSprite.setDepth(this.depth + 1);
+    for (const [name, cfg] of Object.entries(PLAYER_SHEET.anims)) {
+      const key = ANIM[name as keyof typeof PLAYER_SHEET.anims];
+      if (!scene.anims.exists(key)) {
+        scene.anims.create({
+          key,
+          frames: scene.anims.generateFrameNumbers(TEX.player, { start: cfg.start, end: cfg.end }),
+          frameRate: cfg.frameRate,
+          repeat: cfg.repeat,
+        });
+      }
+    }
+    this.play(ANIM.idle);
   }
 
   get facingDir(): 1 | -1 {
     return this.facing;
+  }
+
+  /** True while the whip strike animation is mid-swing. */
+  get isWhipping(): boolean {
+    return this.anims.isPlaying && this.anims.currentAnim?.key === ANIM.whip;
   }
 
   update(input: InputState): void {
@@ -49,24 +74,27 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.setVelocityY(JUMP_VELOCITY);
     }
 
-    this.updateWhipPosition();
+    this.updateAnimation(body);
   }
 
-  /** Flashes the whip sprite at the facing offset. */
+  /** Plays the whip strike; the lash is drawn in the animation frames. */
   whip(): void {
-    this.updateWhipPosition();
-    this.whipSprite.setFlipX(this.facing === -1);
-    this.whipSprite.setVisible(true);
-
-    this.whipHideEvent?.remove();
-    this.whipHideEvent = this.scene.time.delayedCall(WHIP_VISIBLE_MS, () => {
-      this.whipSprite.setVisible(false);
-    });
+    this.play(ANIM.whip);
   }
 
-  private updateWhipPosition(): void {
-    const width = this.whipSprite.displayWidth;
-    const leftEdgeX = this.facing === 1 ? this.x + WHIP_GAP : this.x - WHIP_GAP - width;
-    this.whipSprite.setPosition(leftEdgeX, this.y - this.displayHeight / 2);
+  private updateAnimation(body: Phaser.Physics.Arcade.Body): void {
+    if (this.isWhipping) return; // let the strike finish
+
+    const current = this.anims.currentAnim?.key;
+    const moving = body.velocity.x !== 0;
+
+    if (!body.blocked.down) {
+      // Play once and freeze on the final airborne frame until landing.
+      if (current !== ANIM.jump) this.play(ANIM.jump);
+    } else if (moving) {
+      if (current !== ANIM.walk || !this.anims.isPlaying) this.play(ANIM.walk);
+    } else if (current !== ANIM.idle || !this.anims.isPlaying) {
+      this.play(ANIM.idle);
+    }
   }
 }

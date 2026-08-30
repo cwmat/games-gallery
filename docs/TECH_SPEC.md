@@ -54,10 +54,10 @@ games-gallery/
       layout.test.ts            # corridorLayout() tests (§7)
       autopilot.ts               # pure InputState driver for attract mode (§4.2; design doc §5)
       autopilot.test.ts          # AutopilotController tests (§7)
-      placeholderArt.ts          # TEX key contract + generated placeholder textures
+      placeholderArt.ts          # TEX key contract + PLAYER_SHEET layout + procedural spark/glow
       createGame.ts               # constructs the Phaser.Game instance (§4.2)
       objects/
-        Player.ts                 # player sprite: movement, facing, whip sprite
+        Player.ts                 # player sprite: movement, facing, animation state machine
       scenes/
         CorridorScene.ts          # the corridor Phaser.Scene: lanterns, input, bridge wiring (§4)
     hooks/
@@ -77,10 +77,9 @@ games-gallery/
   eslint.config.js
 ```
 
-`public/assets/` does not exist yet — it is created the first time the
-`pixel-art-pipeline` skill (§3.3, skill 4) saves a generated PNG to disk;
-until then all art is the procedural placeholder set in
-`placeholderArt.ts` and no static media directory is needed.
+`public/assets/` holds the PixelLab art (player spritesheet, lanterns,
+pillar, floor, wall — see §8 for the key/size table); only the spark and
+glow textures remain procedural in `placeholderArt.ts`.
 
 Two files carry the load-bearing contracts other code is written against:
 `src/bridge/events.ts` (the only channel between React and Phaser) and
@@ -369,33 +368,34 @@ should need to change for a content-only update (§8.2 of the design doc).
 
 ## 8. Art pipeline
 
-Placeholder art (design doc §7.1) and target art (design doc §7.2) share
-one contract: the `TEX` key map in `src/game/placeholderArt.ts`.
+All art shares one contract: the `TEX` key map in
+`src/game/placeholderArt.ts`. *(Amended 2026-08-30: the PixelLab art pass
+landed — see design doc §7 and the `pixel-art-pipeline` skill for the
+shipped state.)*
 
 ```
-TEX.player        32 x 48
-TEX.whip           90 x 6
-TEX.lantern        24 x 32
-TEX.lanternBroken  24 x 32
-TEX.spark           4 x 4
-TEX.floor          64 x 64
-TEX.pillar         48 x 256
+TEX.player         76 x 76 cells   public/assets/player.png (spritesheet,
+                                   layout in PLAYER_SHEET: rotations row +
+                                   east idle/whip/jump/walk rows)
+TEX.lantern        32 x 48         public/assets/lantern.png
+TEX.lanternBroken  32 x 48         public/assets/lantern-broken.png
+TEX.floor          64 x 64         public/assets/floor.png
+TEX.pillar         48 x 256        public/assets/pillar.png
+TEX.wall          320 x 256        public/assets/wall.png (parallax bg)
+TEX.spark           4 x 4          procedural (particle)
+TEX.glow           64 x 64         procedural (accent-tinted halo)
 ```
 
-`createPlaceholderTextures(scene)` draws each key with `Phaser.GameObjects.
-Graphics` and calls `generateTexture(key, w, h)`, destroying the Graphics
-object once all keys are baked — no Graphics object is left mounted in the
-scene as a live object.
+Shipped keys are loaded in `CorridorScene.preload` (paths prefixed with
+`import.meta.env.BASE_URL`); `createPlaceholderTextures(scene)` now bakes
+only the two procedural keys. There is no `TEX.whip` texture: the whip
+lash is drawn inside the player's whip animation frames, and the hit test
+is purely positional (design doc §3.3).
 
-The `pixel-art-pipeline` skill (§3.3, skill 4) replaces this module's
-output one key at a time via the PixelLab MCP server, holding every
-dimension above fixed and working within the dark-gothic palette (`#0b0a12`
-background, `#f6b26b` amber, `#8b5cf6` purple, plus each game's `accent`
-for lantern-glow tinting). At these sizes (32–48px on the long edge for
-the player, larger only for the architectural pieces like `pillar`),
-sprites read best as chunky, high-contrast silhouettes rather than
-detailed linework — the same "readable first" instinct the placeholder
-Graphics shapes already establish in §7.1 of the design doc.
+The `pixel-art-pipeline` skill (§3.3, skill 4) owns regeneration and
+additions: PixelLab REST v2 or MCP, dark-gothic palette lock (`#0b0a12`
+background, `#f6b26b` amber, `#8b5cf6` purple; each game's `accent` tints
+the procedural glow and spark burst, never the lantern art itself).
 
 ---
 
