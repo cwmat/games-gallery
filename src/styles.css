@@ -57,16 +57,53 @@ button {
   inset: 0;
   width: 100vw;
   height: 100dvh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  /* Plain block on purpose: Phaser's CENTER_BOTH margins center the canvas.
+     Adding flex/grid centering here double-centers it (off-center bug). */
+  display: block;
   background: var(--bg);
   overflow: hidden;
+}
+
+/* Slow dark aurora drifting through the letterbox gutters — deep indigo,
+   slate blue, and a breath of ember, barely above the void. */
+.game-canvas::before {
+  content: '';
+  position: absolute;
+  inset: -25%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 60% at 16% 28%, rgba(101, 76, 199, 0.14), transparent 70%),
+    radial-gradient(52% 72% at 84% 66%, rgba(56, 89, 168, 0.12), transparent 70%),
+    radial-gradient(34% 48% at 68% 12%, rgba(196, 128, 66, 0.06), transparent 70%),
+    radial-gradient(46% 62% at 30% 88%, rgba(142, 54, 108, 0.09), transparent 70%);
+  filter: blur(48px);
+  animation: gutter-flow 26s ease-in-out infinite alternate;
+}
+
+@keyframes gutter-flow {
+  0% {
+    transform: translate3d(-3%, -2%, 0) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(3%, 2.5%, 0) scale(1.1);
+    opacity: 0.75;
+  }
 }
 
 .game-canvas canvas {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+  position: relative;
+  z-index: 1;
+  /* Soft edges: the frame melts into the gutter aurora instead of ending
+     on a hard rectangle. */
+  -webkit-mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, black 74%, transparent 99%);
+  mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, black 74%, transparent 99%);
 }
 
 /* ---------- HUD ---------- */
@@ -387,5 +424,10 @@ button {
   .card-overlay__progress {
     animation: none;
     display: none;
+  }
+
+  .game-canvas::before {
+    animation: none;
+    opacity: 0.8;
   }
 }

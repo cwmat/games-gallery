@@ -76,6 +76,14 @@ follows the player horizontally with world bounds clamped to
 `[0, worldWidth]`; vertically the corridor never scrolls — one floor, one
 row of lanterns, no verticality in v1 (see §9).
 
+Presentation: Phaser's `CENTER_BOTH` is the single centering authority
+(the `.game-canvas` wrapper is a plain block — CSS flex/grid centering on
+top of Phaser's margins double-centers and shoves the canvas sideways).
+The letterbox gutters carry a slow dark aurora (layered indigo/slate/ember
+radial gradients drifting on a ~26s loop, disabled under
+`prefers-reduced-motion`), and the canvas edges fade into it via a radial
+CSS mask so the frame has no hard rectangle border.
+
 ### 2.3 HUD
 
 A persistent HUD (`src/components/Hud.tsx`) sits over the corridor

@@ -16,6 +16,9 @@ export function createGame(parent: HTMLElement): Phaser.Game {
     audio: { noAudio: true },
     scale: {
       mode: Phaser.Scale.FIT,
+      // Phaser owns BOTH sizing and centering. The .game-canvas wrapper must
+      // stay a plain block — flex/grid centering on top of these margins
+      // double-centers and shoves the canvas off to one side.
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     physics: {
