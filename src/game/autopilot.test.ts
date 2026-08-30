@@ -104,4 +104,52 @@ describe('AutopilotController', () => {
     expect(input.left).toBe(false);
     expect(input.right).toBe(false);
   });
+
+  it('fights an enemy standing between the player and the lantern target', () => {
+    const pilot = new AutopilotController();
+    const lanterns = [lantern(1120, 'a')];
+    const enemies = [{ x: 880, alive: true }];
+
+    // Far from the enemy: walks right toward it (not past it).
+    expect(pilot.update(640, 1, lanterns, enemies).right).toBe(true);
+    // In whip range of the enemy, well short of the lantern: attacks.
+    const atEnemy = pilot.update(880 - 60, 1, lanterns, enemies);
+    expect(atEnemy.attack).toBe(true);
+    expect(atEnemy.right).toBe(false);
+  });
+
+  it('ignores dead enemies and enemies behind the line of travel', () => {
+    const pilot = new AutopilotController();
+    const lanterns = [lantern(1120, 'a')];
+    const enemies = [
+      { x: 880, alive: false }, // dead, on the path
+      { x: 400, alive: true }, // alive, behind the player
+    ];
+
+    // Nothing on the path matters: keeps walking toward the lantern even
+    // when passing straight over the dead enemy's position.
+    expect(pilot.update(850, 1, lanterns, enemies).right).toBe(true);
+    // And attacks the lantern once in range of it.
+    expect(pilot.update(1120 - 60, 1, lanterns, enemies).attack).toBe(true);
+  });
+
+  it('does not advance the wrap-phase carousel on an en-route enemy kill', () => {
+    const pilot = new AutopilotController();
+    const lanterns = [lantern(640, 'a', true), lantern(1120, 'b', true)];
+    const enemies = [{ x: 880, alive: true }];
+
+    // Wrap phase: attack lantern a first (carousel -> b).
+    expect(pilot.update(640, 1, lanterns, enemies).attack).toBe(true);
+    // Walking toward b, the enemy at 880 is on the path — pump the cooldown
+    // out standing at whip range of it, then the attack goes to the enemy.
+    let attacked = false;
+    for (let frame = 0; frame < 120 && !attacked; frame += 1) {
+      attacked = pilot.update(820, 1, lanterns, enemies).attack;
+    }
+    expect(attacked).toBe(true);
+    // The enemy dies; carousel must STILL point at b — the pilot keeps
+    // walking right toward it rather than wrapping back to a.
+    enemies[0].alive = false;
+    expect(pilot.update(820, 1, lanterns, enemies).right).toBe(true);
+  });
 });

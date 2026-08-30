@@ -259,7 +259,8 @@ export class CorridorScene extends Phaser.Scene {
 
   private readAutopilotInput(): InputState {
     const lanterns: AutopilotLantern[] = this.lanterns.map((l) => ({ x: l.x, gameId: l.gameId, broken: l.broken }));
-    return this.autopilot.update(this.player.x, this.player.facingDir, lanterns);
+    const enemies = this.enemies.map((e) => ({ x: e.x, alive: e.alive }));
+    return this.autopilot.update(this.player.x, this.player.facingDir, lanterns, enemies);
   }
 
   private handleWhipHit(): void {
