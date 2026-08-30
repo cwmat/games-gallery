@@ -10,8 +10,12 @@ import { PLAYER_SHEET, TEX, createPlaceholderTextures } from '../placeholderArt'
 
 const FLOOR_HEIGHT = 64;
 const FLOOR_TOP_Y = GAME_HEIGHT - FLOOR_HEIGHT;
-const LANTERN_Y = 160;
+// Lanterns hang on long chains down to whip height — the glass sits level
+// with the player's swing so hits read visually (GAME_DESIGN §4).
+const LANTERN_Y = FLOOR_TOP_Y - 60;
 const PILLAR_STEP = 220;
+// Chunkier Castlevania framing: the camera shows a 1.5x-zoomed slice.
+const CAMERA_ZOOM = 1.5;
 // The whip's strike frame lands ~5 frames into the 16fps swing; the hit (and
 // the scene pause under the card) waits for it so the lash is actually seen.
 const WHIP_HIT_DELAY_MS = 300;
@@ -85,6 +89,7 @@ export class CorridorScene extends Phaser.Scene {
 
     this.cameras.main.setBounds(0, 0, layout.worldWidth, GAME_HEIGHT);
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+    this.cameras.main.setZoom(CAMERA_ZOOM);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanup, this);
     this.events.once(Phaser.Scenes.Events.DESTROY, this.cleanup, this);
@@ -131,6 +136,9 @@ export class CorridorScene extends Phaser.Scene {
     this.lanterns = games.map((game, i) => {
       const x = lanternXs[i];
       const tint = Phaser.Display.Color.HexStringToColor(game.accent).color;
+      // Hanging chain from the ceiling down to the lantern's hook.
+      this.add.rectangle(x, 0, 3, LANTERN_Y - 20, 0x241e31).setOrigin(0.5, 0).setDepth(-2);
+      this.add.rectangle(x - 1, 0, 1, LANTERN_Y - 20, 0x352c47).setOrigin(0.5, 0).setDepth(-2);
       // The lantern art keeps its own amber palette; the game's accent color
       // lives in an additive glow halo behind it (and in the spark burst).
       const glow = this.add.image(x, LANTERN_Y, TEX.glow);

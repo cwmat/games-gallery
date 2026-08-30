@@ -5,14 +5,27 @@ function resolveMediaSrc(src: string): string {
   return `${import.meta.env.BASE_URL}${src.replace(/^\//, '')}`;
 }
 
-function Media({ media }: { media: GameMedia }) {
+function Media({ media, hero = false }: { media: GameMedia; hero?: boolean }) {
   const src = resolveMediaSrc(media.src);
+  const className = hero ? 'game-card__media game-card__media--hero' : 'game-card__media';
 
   if (media.kind === 'video') {
-    return <video className="game-card__media" src={src} muted loop playsInline controls aria-label={media.alt} />;
+    return (
+      <video
+        className={className}
+        src={src}
+        poster={media.poster ? resolveMediaSrc(media.poster) : undefined}
+        muted
+        loop
+        playsInline
+        autoPlay={hero}
+        controls
+        aria-label={media.alt}
+      />
+    );
   }
 
-  return <img className="game-card__media" src={src} alt={media.alt} loading="lazy" />;
+  return <img className={className} src={src} alt={media.alt} loading="lazy" />;
 }
 
 export function GameCard({ game }: { game: GameEntry }) {
@@ -25,11 +38,20 @@ export function GameCard({ game }: { game: GameEntry }) {
         </span>
       </header>
 
+      {game.media.length > 0 ? (
+        <Media media={game.media[0]} hero />
+      ) : (
+        <div className="game-card__media-slot" aria-hidden="true">
+          <span className="game-card__media-slot-glyph">▶</span>
+          <span>gameplay footage soon</span>
+        </div>
+      )}
+
       <p className="game-card__blurb">{game.blurb}</p>
 
-      {game.media.length > 0 && (
+      {game.media.length > 1 && (
         <div className="game-card__media-list">
-          {game.media.map((media, i) => (
+          {game.media.slice(1).map((media, i) => (
             <Media key={`${game.id}-media-${i}`} media={media} />
           ))}
         </div>

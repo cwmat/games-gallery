@@ -58,7 +58,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   update(input: InputState): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
 
-    if (input.left && !input.right) {
+    // A grounded whip plants your feet (and locks facing) until the swing
+    // finishes — the delayed hit then lands exactly where the strike frame
+    // shows it. Air whips keep their momentum and steering.
+    const planted = this.isWhipping && body.blocked.down;
+
+    if (planted) {
+      this.setVelocityX(0);
+    } else if (input.left && !input.right) {
       this.setVelocityX(-WALK_SPEED);
       this.facing = -1;
       this.setFlipX(true);
@@ -70,7 +77,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.setVelocityX(0);
     }
 
-    if (input.jump && body.blocked.down) {
+    if (input.jump && body.blocked.down && !planted) {
       this.setVelocityY(JUMP_VELOCITY);
     }
 
