@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { bus, getCurrentMode } from '../../bridge/events';
+import { bus, getCurrentMode, isGateEntered } from '../../bridge/events';
 import type { Mode } from '../../bridge/events';
 import { games } from '../../data/games';
 import { AutopilotController } from '../autopilot';
@@ -31,6 +31,7 @@ const GAME_CONTROL_KEYS = new Set(['arrowleft', 'arrowright', 'arrowup', 'arrowd
 interface LanternState {
   sprite: Phaser.GameObjects.Image;
   glow: Phaser.GameObjects.Image;
+  label: Phaser.GameObjects.Text;
   gameId: string;
   x: number;
   broken: boolean;
@@ -106,7 +107,14 @@ export class CorridorScene extends Phaser.Scene {
   }
 
   update(): void {
-    const input = this.mode === 'auto' ? this.readAutopilotInput() : this.readManualInput();
+    // Autoplay idles until the visitor clicks through the Enter modal, so
+    // the attract demo never breaks lanterns underneath the title screen.
+    const input =
+      this.mode === 'auto'
+        ? isGateEntered()
+          ? this.readAutopilotInput()
+          : { left: false, right: false, attack: false, jump: false }
+        : this.readManualInput();
 
     this.player.update(input);
 
@@ -168,7 +176,33 @@ export class CorridorScene extends Phaser.Scene {
         ease: 'Sine.easeInOut',
       });
       const sprite = this.add.image(x, LANTERN_Y, TEX.lantern);
-      return { sprite, glow, gameId: game.id, x, broken: false, tint };
+
+      // Floating title label above the lantern — the corridor doubles as a
+      // signposted shelf. Accent-colored, dark-stroked for readability,
+      // with a slow desynced bob so the hall feels alive.
+      const label = this.add
+        .text(x, LANTERN_Y - 48, game.title, {
+          fontFamily: '"Courier New", ui-monospace, monospace',
+          fontSize: '13px',
+          fontStyle: 'bold',
+          color: game.accent,
+        })
+        .setOrigin(0.5, 1)
+        .setStroke('#0b0a12', 4)
+        .setAlpha(0.9)
+        .setDepth(2)
+        .setResolution(2);
+      this.tweens.add({
+        targets: label,
+        y: LANTERN_Y - 48 - 4,
+        alpha: { from: 0.75, to: 1 },
+        duration: 1500 + i * 173, // desync per lantern, like the glow pulse
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+
+      return { sprite, glow, label, gameId: game.id, x, broken: false, tint };
     });
   }
 
@@ -313,6 +347,10 @@ export class CorridorScene extends Phaser.Scene {
     });
     this.tweens.killTweensOf(lantern.glow);
     lantern.glow.setVisible(false);
+    // The label stays (it identifies the husk for re-opening) but goes dim
+    // and still — an unlit sign over an unlit lantern.
+    this.tweens.killTweensOf(lantern.label);
+    lantern.label.setAlpha(0.4);
     impactBurst(this, lantern.x, LANTERN_Y, lantern.tint, 1);
   }
 

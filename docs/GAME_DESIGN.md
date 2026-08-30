@@ -187,6 +187,12 @@ deal no damage, block nothing, and exist to be satisfying to whip:
 
 ## 4. Lanterns and cards
 
+Each lantern carries a floating title label above it — the game's `title`
+in its `accent` color with a dark stroke, bobbing gently on a desynced
+tween — so the corridor reads as a signposted shelf even before anything
+is whipped. On shatter the label stays (it identifies the husk for
+reopening) but goes dim and still.
+
 ### 4.1 Shatter sequence
 
 1. Whip hitbox overlaps an unbroken lantern within range.
@@ -287,14 +293,20 @@ input for the rest of the session. There is deliberately no "give control
 back to autoplay after N seconds idle" — once a human is driving, autoplay
 does not wrestle the wheel back.
 
-### 5.4 Mobile default
+### 5.4 Autoplay is the default
 
-`(pointer: coarse)` devices start in `'auto'` mode on load — a corridor you
-can't comfortably keyboard through defaults to watching it play itself.
-Tap-to-advance takes the place of dwell-waiting: a tap while a card is open
-closes it immediately and lets autoplay continue, so mobile visitors can
-pace through the whole gallery at their own speed without ever touching a
-d-pad that doesn't exist.
+Every visitor starts in `'auto'` mode — the site opens as an arcade attract
+demo, desktop and mobile alike. *(Amended 2026-08-30: previously only
+`(pointer: coarse)` devices defaulted to auto.)* The demo is held idle
+until the Enter gate (§10.1) is clicked — otherwise it would break
+lanterns and pop cards underneath the title modal — and starts walking the
+moment the visitor enters. Manual play is one keypress away via takeover
+(§5.3) or the HUD toggle.
+
+On touch devices, tap-to-advance takes the place of dwell-waiting: a tap
+while a card is open closes it immediately and lets autoplay continue, so
+mobile visitors can pace through the whole gallery at their own speed
+without ever touching a d-pad that doesn't exist.
 
 ### 5.5 Card engagement cancels auto-close
 
