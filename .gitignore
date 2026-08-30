@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+*.log
+
+# env — PIXELLAB_SECRET etc. (keep the example committed)
+.env*
+!.env.example
+
+# local agent settings (skills, launch.json, and .mcp.json ARE committed)
+.claude/settings.local.json

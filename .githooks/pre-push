@@ -1,0 +1,8 @@
+#!/bin/sh
+# Gates must pass before anything leaves this machine (CLAUDE.md rule 6).
+# Never bypass with --no-verify.
+echo "pre-push: running pnpm gates"
+pnpm gates || {
+  echo "pre-push: gates failed — push aborted"
+  exit 1
+}
