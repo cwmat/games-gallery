@@ -100,10 +100,20 @@ button {
   image-rendering: crisp-edges;
   position: relative;
   z-index: 1;
-  /* Soft edges: the frame melts into the gutter aurora instead of ending
-     on a hard rectangle. */
-  -webkit-mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, black 74%, transparent 99%);
-  mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, black 74%, transparent 99%);
+  /* Soft edges: the frame melts into the gutter aurora instead of ending on
+     a hard rectangle. Two linear gradients intersected = an even fade on all
+     four edges. (A radial ellipse mask does NOT work here: its percentage
+     radii resolve against the FULL box dimensions, so the fade ring lands
+     outside the canvas and nothing fades.) */
+  --canvas-fade: 8%;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0, black var(--canvas-fade), black calc(100% - var(--canvas-fade)), transparent 100%),
+    linear-gradient(to bottom, transparent 0, black var(--canvas-fade), black calc(100% - var(--canvas-fade)), transparent 100%);
+  -webkit-mask-composite: destination-in;
+  mask-image:
+    linear-gradient(to right, transparent 0, black var(--canvas-fade), black calc(100% - var(--canvas-fade)), transparent 100%),
+    linear-gradient(to bottom, transparent 0, black var(--canvas-fade), black calc(100% - var(--canvas-fade)), transparent 100%);
+  mask-composite: intersect;
 }
 
 /* ---------- HUD ---------- */

@@ -81,8 +81,12 @@ Presentation: Phaser's `CENTER_BOTH` is the single centering authority
 top of Phaser's margins double-centers and shoves the canvas sideways).
 The letterbox gutters carry a slow dark aurora (layered indigo/slate/ember
 radial gradients drifting on a ~26s loop, disabled under
-`prefers-reduced-motion`), and the canvas edges fade into it via a radial
-CSS mask so the frame has no hard rectangle border.
+`prefers-reduced-motion`), and the canvas edges fade into it via an
+intersection of two linear-gradient CSS masks (fade width per edge is the
+`--canvas-fade` custom property, currently 8%) so the frame has no hard
+rectangle border. A radial ellipse mask specifically does not work for
+this — its percentage radii resolve against the full box dimensions, which
+parks the fade ring outside the canvas entirely.
 
 ### 2.3 HUD
 
